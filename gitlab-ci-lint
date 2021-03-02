@@ -17,11 +17,8 @@ else
     GITLAB_API_URL="${GITLAB_API_URL:-https://gitlab.com/api/v4}"
 fi
 
-CONTENT=$(echo "$INPUT" | yq '.' | tr -d '\n' | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-RESPONSE=$(curl --header "Content-Type: application/json" $GITLAB_API_URL/ci/lint --data @- <<CURL_DATA
-{"content": $CONTENT}
-CURL_DATA
-)
+CONTENT=$(jq --null-input --arg yaml "$(<${INPUT})" '.content=$yaml')
+RESPONSE=$(curl -X POST "${GITLAB_API_URL}/ci/lint" -H 'Content-Type: application/json' -H "private-token: ${private_token}" --data @-)
 STATUS=$(echo $RESPONSE | jq -r '.status')
 
 if [[ $STATUS == 'valid' ]]; then
